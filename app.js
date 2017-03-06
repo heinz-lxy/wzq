@@ -1,49 +1,43 @@
+
+var gameBoard = new Array(100) //棋盘
+var realGameBoard = $('#realGameBoard')
+var lastPlayer
+var lastMoveCoor
+var flag
 var app = {
-	init:function init(){
-		var gameBoard = new Array(100) //棋盘
-		var realGameBoard = $('#realGameBoard')
-		var lastPlayer
-		var lastMoveCoor
-		var flag
-		eventBind(realGameBoard)
-		
-
-		function eventBind(realGameBoard){
-			realGameBoard.on('click',function(e){
-				userMove(e)
-			})
-		}
-
-
-		function userMove(e){
+	init:function(){
+		this.events()
+	},
+	fun:{
+		userMove:function(e){
 			// 获取鼠标点击点（设置误差范围）
 			var x = e.clientX
 			var y = e.clientY
 
 			// 获取棋盘左上角格中心点坐标
 			var element = realGameBoard.find('tr').eq(0).children().eq(0)
-			var offset = element.offset();
+			var offset = realGameBoard.offset();
 			var width = element.width();
 			var oX = offset.left 
 			var oY = offset.top 
 
 			// 相对棋格坐标
-			var boardCoor = {x:(Math.ceil((x-oX)/width)),y:(Math.ceil((y-oY)/width))}
+			// 38/34为offset和clientX单位之间的转换
+			var boardCoor = {x:(Math.ceil((x/38*34-oX)/width)),y:(Math.ceil((y/38*34-oY)/width))}
 			
 			// 棋盘坐标
-			// console.log(relCoor.x/width,relCoor.y/height)
-			console.log(e.offsetX)
+			// console.log(e.offsetX)
 			// 判断当前是否有棋子
-			if(isOccupied(boardCoor)){
+			if(this.isOccupied(boardCoor)){
 				return
 			}
-			makeMove(0,boardCoor)
+			this.makeMove(0,boardCoor)
 			if(!flag){
-				AIMove()
+				this.AIMove()
 			}
-		}
+		},
 
-		function AIMove(){
+		AIMove:function(){
 			// 判断对手最后一步的状态 攻 准备 守
 			// 落子
 			// 3连判断 
@@ -51,18 +45,18 @@ var app = {
 			var i = 5
 			var endPoints
 			do{
-				endPoints = isN(lastMoveCoor,0,i)
+				endPoints = this.isN(lastMoveCoor,0,i)
 				i--
 			}while(endPoints===null && i>0)
-			if(!makeMove(1,endPoints[0])){
-				makeMove(1,endPoints[1])
+			if(!this.makeMove(1,endPoints[0])){
+				this.makeMove(1,endPoints[1])
 			}
-		}
+		},
 
 
 		//裁判函数 若返回true则赢
-		function judge(){
-			if(isN(lastMoveCoor,lastPlayer,5)!==null){
+		judge:function(){
+			if(this.isN(lastMoveCoor,lastPlayer,5)!==null){
 				realGameBoard.off('click') //对局结束
 				flag = true
 				switch(lastPlayer){
@@ -76,12 +70,12 @@ var app = {
 			}else{
 				flag = false
 			}
-		}
+		},
 
-	
+
 		// 连n判断 返回端点坐标
 		// 通过四方向最大连来进行判断
-		function isN(coor,player,n){
+		isN:function(coor,player,n){
 			//四个方向的方向数组
 			var directions=[{i:1,j:0},{i:1,j:1},{i:0,j:1},{i:-1,j:1}]
 			var key = lastPlayer.toString().repeat(n)
@@ -119,9 +113,8 @@ var app = {
 						break
 					default:
 				}
-				// console.log(array)
 				//获取相应点在棋盘上的值
-				var result = array.map((value) => gameBoard[coor2Index(value)])
+				var result = array.map((value) => gameBoard[this.coor2Index(value)])
 				//将数组中的undefined转化为2
 				resultStr = result.map((x=2)=>x).join('')
 				if(resultStr.includes(key)){
@@ -132,32 +125,34 @@ var app = {
 					var j = i+n-1 //连通点末尾标记
 					// 将i,j 译回棋盘坐标
 					// 5-n为array在originArray中的起始位置
-					// console.log([originalArray[5-n+i-1],originalArray[5-n+j+1]])
 					return [originalArray[5-n+i-1],originalArray[5-n+j+1]]	//返回端点坐标数组
 				}
 			}
 			return null
 
-		}
+		},
 
 		// 棋盘坐标化为数组坐标
-		function coor2Index(coor){
-			var x = coor.x
-			var y = coor.y
+		coor2Index:function(coor){
+			var {x,y} = coor
 			var index = (y-1)*10+x
 			return index
-		}
+		},
 
 		// 判断当前位置是否有棋子
-		function isOccupied(coor){
-			var index=coor2Index(coor)
-			return gameBoard[index]===undefined?false:true
-		}
+		isOccupied:function(coor){
+			var index=this.coor2Index(coor)
+			if(gameBoard[index]===undefined||coor.x<1||coor.y<1){
+				return false
+			}else{
+				return true
+			}
+		},
 
 		// 落子
-		function makeMove(player,coor){
-			var index=coor2Index(coor)
-			if(isOccupied(coor)){
+		makeMove:function(player,coor){
+			var index=this.coor2Index(coor)
+			if(this.isOccupied(coor)){
 				return false	//落子失败
 			}
 			gameBoard[index]=(player==0)?0:1
@@ -165,18 +160,32 @@ var app = {
 			//最后一步记录信息更新
 			lastPlayer = player
 			lastMoveCoor = coor
-			render(realGameBoard,index,player)
-			judge()
+			this.render(realGameBoard,index,player)
+			this.judge()
 			return true	//落子成功
 
-		}
+		},
 
-		function render(realGameBoard,index,player){
-			var chesspiece = (player==0)?0:1
+		render:function(realGameBoard,index,player){
+			var chesspiece 
+			if(player==0){
+				chesspiece=$('<div class="black-chesspiece"></div>')
+			}else{
+				chesspiece=$('<div class="white-chesspiece"></div>')
+			}
 			realGameBoard.find('td').eq(index-1).append(chesspiece)
 		}
 
 
+	},
+	
+
+
+	events:function(){
+		var that = this
+		realGameBoard.on('click',function(e){
+			that.fun.userMove(e)
+		})
 	}
 }
 
