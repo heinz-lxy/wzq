@@ -1,13 +1,18 @@
-
 var gameBoard = new Array(100) //棋盘
-var realGameBoard = $('#realGameBoard')
 var lastPlayer
 var lastMoveCoor
 var flag
 var app = {
 	init:function(){
+		this.initGame()
 		this.events()
 	},
+	initGame:function(){
+		console.log(1)
+		var table= '<table id="realGameBoard">'+('<tr>'+'<td></td>'.repeat(10)+'</tr>').repeat(10)+'</table>'
+		$('body').html(table)
+	},
+
 	fun:{
 		userMove:function(e){
 			// 获取鼠标点击点（设置误差范围）
@@ -15,8 +20,8 @@ var app = {
 			var y = e.clientY
 
 			// 获取棋盘左上角格中心点坐标
-			var element = realGameBoard.find('tr').eq(0).children().eq(0)
-			var offset = realGameBoard.offset();
+			var element = $('#realGameBoard').find('tr').eq(0).children().eq(0)
+			var offset = $('#realGameBoard').offset();
 			var width = element.width();
 			var oX = offset.left 
 			var oY = offset.top 
@@ -57,7 +62,7 @@ var app = {
 		//裁判函数 若返回true则赢
 		judge:function(){
 			if(this.isN(lastMoveCoor,lastPlayer,5)!==null){
-				realGameBoard.off('click') //对局结束
+				$('#realGameBoard').off('click') //对局结束
 				flag = true
 				switch(lastPlayer){
 					case 0:
@@ -151,6 +156,10 @@ var app = {
 
 		// 落子
 		makeMove:function(player,coor){
+			console.log(coor)
+			if(coor.x===0||coor.x===11||coor.y===0||coor.y===11){ 
+				return false //落子失败
+			}
 			var index=this.coor2Index(coor)
 			if(this.isOccupied(coor)){
 				return false	//落子失败
@@ -160,20 +169,20 @@ var app = {
 			//最后一步记录信息更新
 			lastPlayer = player
 			lastMoveCoor = coor
-			this.render(realGameBoard,index,player)
+			this.render(index,player)
 			this.judge()
 			return true	//落子成功
 
 		},
 
-		render:function(realGameBoard,index,player){
+		render:function(index,player){
 			var chesspiece 
 			if(player==0){
 				chesspiece=$('<div class="black-chesspiece"></div>')
 			}else{
 				chesspiece=$('<div class="white-chesspiece"></div>')
 			}
-			realGameBoard.find('td').eq(index-1).append(chesspiece)
+			$('#realGameBoard').find('td').eq(index-1).html(chesspiece)
 		}
 
 
@@ -183,8 +192,10 @@ var app = {
 
 	events:function(){
 		var that = this
-		realGameBoard.on('click',function(e){
+		console.log(1)
+		$('#realGameBoard').on('click',function(e){
 			that.fun.userMove(e)
+			console.log(2)
 		})
 	}
 }

@@ -1,0 +1,26 @@
+table,tr,td{
+	border:1px solid black;
+}
+td{
+	width:35px;
+	height:35px;
+}
+
+table{
+	 border-collapse:collapse;
+}
+
+.black-chesspiece{
+	border-radius: 50%;
+	background-color: black;
+	width:33px;
+	height:33px
+}
+
+.white-chesspiece{
+	border-radius: 50%;
+	border:1px solid black;
+	width:33px;
+	height:33px
+
+}
