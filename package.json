@@ -1,0 +1,29 @@
+{
+  "name": "wzq",
+  "version": "1.0.0",
+  "description": "五子棋游戏\r ## Demo地址\r https://heinz-lxy.github.io/wzq/",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heinz-lxy/wzq.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/heinz-lxy/wzq/issues"
+  },
+  "homepage": "https://github.com/heinz-lxy/wzq#readme",
+  "devDependencies": {
+    "css-loader": "^0.27.3",
+    "html-webpack-plugin": "^2.28.0",
+    "style-loader": "^0.14.1",
+    "webpack": "^2.2.1"
+  },
+  "dependencies": {
+    "jquery": "^3.2.0"
+  }
+}
