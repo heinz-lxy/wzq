@@ -9,8 +9,7 @@ var app = {
 		this.events()
 	},
 	initGame:function(){
-		console.log(1)
-		var table= '<table id="realGameBoard">'+('<tr>'+'<td></td>'.repeat(10)+'</tr>').repeat(10)+'</table>'
+		var table= '<table class="col-xs-12" id="realGameBoard">'+('<tr>'+'<td></td>'.repeat(10)+'</tr>').repeat(10)+'</table>'
 		$('body').html(table)
 	},
 
@@ -23,13 +22,12 @@ var app = {
 			// 获取棋盘左上角格中心点坐标
 			var element = $('#realGameBoard').find('tr').eq(0).children().eq(0)
 			var offset = $('#realGameBoard').offset();
-			var width = element.width();
+			var width = parseInt(element.css('width'))
 			var oX = offset.left 
 			var oY = offset.top 
-
 			// 相对棋格坐标
 			// 38/34为offset和clientX单位之间的转换
-			var boardCoor = {x:(Math.ceil((x/38*34-oX)/width)),y:(Math.ceil((y/38*34-oY)/width))}
+			var boardCoor = {x:(Math.ceil((x-oX)/width)),y:(Math.ceil((y-oY)/width))}
 			
 			// 棋盘坐标
 			// console.log(e.offsetX)
@@ -47,7 +45,6 @@ var app = {
 			// 判断对手最后一步的状态 攻 准备 守
 			// 落子
 			// 3连判断 
-			// 
 			var i = 5
 			var endPoints
 			do{
@@ -193,10 +190,8 @@ var app = {
 
 	events:function(){
 		var that = this
-		console.log(1)
 		$('#realGameBoard').on('click',function(e){
 			that.fun.userMove(e)
-			console.log(2)
 		})
 	}
 }

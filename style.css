@@ -1,26 +1,25 @@
-table,tr,td{
-	border:1px solid black;
-}
-td{
-	width:35px;
-	height:35px;
-}
+table, tr, td {
+  border: 1px solid black; }
 
-table{
-	 border-collapse:collapse;
-}
+@media screen and (max-width: 768px) {
+  table {
+    width: 80%;
+    padding-top: 80%;
+    position: relative; } }
+table {
+  margin: 0 auto;
+  border-collapse: collapse; }
+  table td {
+    width: 35px;
+    height: 35px; }
 
-.black-chesspiece{
-	border-radius: 50%;
-	background-color: black;
-	width:33px;
-	height:33px
-}
+.chesspiece, .black-chesspiece, .white-chesspiece {
+  border-radius: 50%;
+  width: 33px;
+  height: 33px; }
 
-.white-chesspiece{
-	border-radius: 50%;
-	border:1px solid black;
-	width:33px;
-	height:33px
+.black-chesspiece {
+  background-color: black; }
 
-}
+.white-chesspiece {
+  border: 1px solid black; }

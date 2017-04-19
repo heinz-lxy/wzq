@@ -1,0 +1,42 @@
+$cell:35px;
+$chesspiece:$cell - 2px;
+
+table,tr,td{
+	border:1px solid black;  
+}
+
+@media screen and (max-width: 768px){
+	table{
+		width:80%;
+		padding-top:80%;
+	}
+
+
+}
+
+table{	
+	margin:0 auto; 
+	
+	border-collapse:collapse;
+	td{
+		width:$cell;
+		height:$cell;
+	}
+}
+
+.chesspiece{
+	border-radius: 50%;
+	width:$chesspiece;
+	height:$chesspiece;
+	position: relative;
+}
+
+.black-chesspiece{
+	@extend .chesspiece;
+	background-color: black;
+}
+
+.white-chesspiece{
+	@extend .chesspiece;
+	border:1px solid black;
+}

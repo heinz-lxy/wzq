@@ -6,9 +6,9 @@
 /******/ 	function __webpack_require__(moduleId) {
 /******/
 /******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
+/******/ 		if(installedModules[moduleId]) {
 /******/ 			return installedModules[moduleId].exports;
-/******/
+/******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 11);
+/******/ 	return __webpack_require__(__webpack_require__.s = 2);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -73,10 +73,10 @@
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(4);
+var content = __webpack_require__(5);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // add the styles to the DOM
-var update = __webpack_require__(2)(content, {});
+var update = __webpack_require__(3)(content, {});
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -97,7 +97,7 @@ if(false) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
- * jQuery JavaScript Library v3.2.0
+ * jQuery JavaScript Library v3.2.1
  * https://jquery.com/
  *
  * Includes Sizzle.js
@@ -107,7 +107,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2017-03-16T21:26Z
+ * Date: 2017-03-20T18:59Z
  */
 ( function( global, factory ) {
 
@@ -186,7 +186,7 @@ var support = {};
 
 
 var
-	version = "3.2.0",
+	version = "3.2.1",
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -5441,11 +5441,9 @@ jQuery.event = {
 		},
 		click: {
 
-			// For checkable types, fire native event so checked state will be right
+			// For checkbox, fire native event so checked state will be right
 			trigger: function() {
-				if ( rcheckableType.test( this.type ) &&
-					this.click && nodeName( this, "input" ) ) {
-
+				if ( this.type === "checkbox" && this.click && nodeName( this, "input" ) ) {
 					this.click();
 					return false;
 				}
@@ -6265,6 +6263,11 @@ var getStyles = function( elem ) {
 
 function curCSS( elem, name, computed ) {
 	var width, minWidth, maxWidth, ret,
+
+		// Support: Firefox 51+
+		// Retrieving style before computed somehow
+		// fixes an issue with getting wrong values
+		// on detached elements
 		style = elem.style;
 
 	computed = computed || getStyles( elem );
@@ -6452,6 +6455,12 @@ function getWidthOrHeight( elem, name, extra ) {
 	// for getComputedStyle silently falls back to the reliable elem.style
 	valueIsBorderBox = isBorderBox &&
 		( support.boxSizingReliable() || val === elem.style[ name ] );
+
+	// Fall back to offsetWidth/Height when value is "auto"
+	// This happens for inline elements with no explicit setting (gh-3571)
+	if ( val === "auto" ) {
+		val = elem[ "offset" + name[ 0 ].toUpperCase() + name.slice( 1 ) ];
+	}
 
 	// Normalize "", auto, and prepare for extra
 	val = parseFloat( val ) || 0;
@@ -10269,16 +10278,16 @@ jQuery.fn.extend( {
 		return arguments.length === 1 ?
 			this.off( selector, "**" ) :
 			this.off( types, selector || "**", fn );
-	},
-	holdReady: function( hold ) {
-		if ( hold ) {
-			jQuery.readyWait++;
-		} else {
-			jQuery.ready( true );
-		}
 	}
 } );
 
+jQuery.holdReady = function( hold ) {
+	if ( hold ) {
+		jQuery.readyWait++;
+	} else {
+		jQuery.ready( true );
+	}
+};
 jQuery.isArray = Array.isArray;
 jQuery.parseJSON = JSON.parse;
 jQuery.nodeName = nodeName;
@@ -10347,6 +10356,215 @@ return jQuery;
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
+/* WEBPACK VAR INJECTION */(function($) {__webpack_require__(0);
+var gameBoard = new Array(100) //棋盘
+var lastPlayer
+var lastMoveCoor
+var flag
+var app = {
+	init:function(){
+		this.initGame()
+		this.events()
+	},
+	initGame:function(){
+		var table= '<table class="col-xs-12" id="realGameBoard">'+('<tr>'+'<td></td>'.repeat(10)+'</tr>').repeat(10)+'</table>'
+		$('body').html(table)
+	},
+
+	fun:{
+		userMove:function(e){
+			// 获取鼠标点击点（设置误差范围）
+			var x = e.clientX
+			var y = e.clientY
+
+			// 获取棋盘左上角格中心点坐标
+			var element = $('#realGameBoard').find('tr').eq(0).children().eq(0)
+			var offset = $('#realGameBoard').offset();
+			var width = parseInt(element.css('width'))
+			var oX = offset.left 
+			var oY = offset.top 
+			// 相对棋格坐标
+			// 38/34为offset和clientX单位之间的转换
+			var boardCoor = {x:(Math.ceil((x-oX)/width)),y:(Math.ceil((y-oY)/width))}
+			
+			// 棋盘坐标
+			// console.log(e.offsetX)
+			// 判断当前是否有棋子
+			if(this.isOccupied(boardCoor)){
+				return
+			}
+			this.makeMove(0,boardCoor)
+			if(!flag){
+				this.AIMove()
+			}
+		},
+
+		AIMove:function(){
+			// 判断对手最后一步的状态 攻 准备 守
+			// 落子
+			// 3连判断 
+			var i = 5
+			var endPoints
+			do{
+				endPoints = this.isN(lastMoveCoor,0,i)
+				i--
+			}while(endPoints===null && i>0)
+			if(!this.makeMove(1,endPoints[0])){
+				this.makeMove(1,endPoints[1])
+			}
+		},
+
+
+		//裁判函数 若返回true则赢
+		judge:function(){
+			if(this.isN(lastMoveCoor,lastPlayer,5)!==null){
+				$('#realGameBoard').off('click') //对局结束
+				flag = true
+				switch(lastPlayer){
+					case 0:
+						alert('你赢了')
+						break
+					case 1:
+						alert('你输了')
+						break
+				}
+			}else{
+				flag = false
+			}
+		},
+
+
+		// 连n判断 返回端点坐标
+		// 通过四方向最大连来进行判断
+		isN:function(coor,player,n){
+			//四个方向的方向数组
+			var directions=[{i:1,j:0},{i:1,j:1},{i:0,j:1},{i:-1,j:1}]
+			var key = lastPlayer.toString().repeat(n)
+
+			//遍历数组
+			for(var a=0;a<directions.length;a++){
+				var {i,j} = directions[a];	//ES6
+				var {x,y} = lastMoveCoor
+				//得到9连坐标数组
+				var originalArray = Array.of({x:(x-4*i),y:(y-4*j)},
+					{x:(x-3*i),y:(y-3*j)},
+					{x:(x-2*i),y:(y-2*j)},
+					{x:(x-i),y:(y-j)},
+					{x:x,y:y},
+					{x:(x+i),y:(y+j)},
+					{x:(x+2*i),y:(y+2*j)},
+					{x:(x+3*i),y:(y+3*j)},
+					{x:(x+4*i),y:(y+4*j)}
+				)
+				switch(n){
+					case 1:
+						array=originalArray.slice(4,5)
+						break
+					case 2:
+						array=originalArray.slice(3,6)
+						break
+					case 3:
+						array=originalArray.slice(2,7)
+						break
+					case 4:
+						array=originalArray.slice(1,8)
+						break
+					case 5:
+						array=originalArray
+						break
+					default:
+				}
+				//获取相应点在棋盘上的值
+				var result = array.map((value) => gameBoard[this.coor2Index(value)])
+				//将数组中的undefined转化为2
+				resultStr = result.map((x=2)=>x).join('')
+				if(resultStr.includes(key)){
+					var i = 0  //连通点起始标记
+					while(!resultStr.startsWith(key,i)){
+						i++
+					}
+					var j = i+n-1 //连通点末尾标记
+					// 将i,j 译回棋盘坐标
+					// 5-n为array在originArray中的起始位置
+					return [originalArray[5-n+i-1],originalArray[5-n+j+1]]	//返回端点坐标数组
+				}
+			}
+			return null
+
+		},
+
+		// 棋盘坐标化为数组坐标
+		coor2Index:function(coor){
+			var {x,y} = coor
+			var index = (y-1)*10+x
+			return index
+		},
+
+		// 判断当前位置是否有棋子
+		isOccupied:function(coor){
+			var index=this.coor2Index(coor)
+			if(gameBoard[index]===undefined||coor.x<1||coor.y<1){
+				return false
+			}else{
+				return true
+			}
+		},
+
+		// 落子
+		makeMove:function(player,coor){
+			console.log(coor)
+			if(coor.x===0||coor.x===11||coor.y===0||coor.y===11){ 
+				return false //落子失败
+			}
+			var index=this.coor2Index(coor)
+			if(this.isOccupied(coor)){
+				return false	//落子失败
+			}
+			gameBoard[index]=(player==0)?0:1
+
+			//最后一步记录信息更新
+			lastPlayer = player
+			lastMoveCoor = coor
+			this.render(index,player)
+			this.judge()
+			return true	//落子成功
+
+		},
+
+		render:function(index,player){
+			var chesspiece 
+			if(player==0){
+				chesspiece=$('<div class="black-chesspiece"></div>')
+			}else{
+				chesspiece=$('<div class="white-chesspiece"></div>')
+			}
+			$('#realGameBoard').find('td').eq(index-1).html(chesspiece)
+		}
+
+
+	},
+	
+
+
+	events:function(){
+		var that = this
+		$('#realGameBoard').on('click',function(e){
+			that.fun.userMove(e)
+		})
+	}
+}
+
+
+app.init()
+
+
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
 /*
 	MIT License http://www.opensource.org/licenses/mit-license.php
 	Author Tobias Koppers @sokra
@@ -10368,7 +10586,7 @@ var stylesInDom = {},
 	singletonElement = null,
 	singletonCounter = 0,
 	styleElementsInsertedAtTop = [],
-	fixUrls = __webpack_require__(3);
+	fixUrls = __webpack_require__(4);
 
 module.exports = function(list, options) {
 	if(typeof DEBUG !== "undefined" && DEBUG) {
@@ -10621,7 +10839,7 @@ function updateLink(linkElement, options, obj) {
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports) {
 
 
@@ -10690,21 +10908,21 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(5)(undefined);
+exports = module.exports = __webpack_require__(6)(undefined);
 // imports
 
 
 // module
-exports.push([module.i, "table,tr,td{\r\n\tborder:1px solid black;\r\n}\r\ntd{\r\n\twidth:35px;\r\n\theight:35px;\r\n}\r\n\r\ntable{\r\n\t border-collapse:collapse;\r\n}\r\n\r\n.black-chesspiece{\r\n\tborder-radius: 50%;\r\n\tbackground-color: black;\r\n\twidth:33px;\r\n\theight:33px\r\n}\r\n\r\n.white-chesspiece{\r\n\tborder-radius: 50%;\r\n\tborder:1px solid black;\r\n\twidth:33px;\r\n\theight:33px\r\n\r\n}", ""]);
+exports.push([module.i, "table, tr, td {\r\n  border: 1px solid black; }\r\n\r\n@media screen and (max-width: 768px) {\r\n  table {\r\n    width: 80%;\r\n    padding-top: 80%;\r\n    position: relative; } }\r\ntable {\r\n  margin: 0 auto;\r\n  border-collapse: collapse; }\r\n  table td {\r\n    width: 35px;\r\n    height: 35px; }\r\n\r\n.chesspiece, .black-chesspiece, .white-chesspiece {\r\n  border-radius: 50%;\r\n  width: 33px;\r\n  height: 33px; }\r\n\r\n.black-chesspiece {\r\n  background-color: black; }\r\n\r\n.white-chesspiece {\r\n  border: 1px solid black; }\r\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(Buffer) {/*
@@ -10783,111 +11001,10 @@ function toComment(sourceMap) {
   return '/*# ' + data + ' */';
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(10).Buffer))
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports) {
-
-var toString = {}.toString;
-
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
-
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8).Buffer))
 
 /***/ }),
 /* 7 */
-/***/ (function(module, exports) {
-
-exports.read = function (buffer, offset, isLE, mLen, nBytes) {
-  var e, m
-  var eLen = nBytes * 8 - mLen - 1
-  var eMax = (1 << eLen) - 1
-  var eBias = eMax >> 1
-  var nBits = -7
-  var i = isLE ? (nBytes - 1) : 0
-  var d = isLE ? -1 : 1
-  var s = buffer[offset + i]
-
-  i += d
-
-  e = s & ((1 << (-nBits)) - 1)
-  s >>= (-nBits)
-  nBits += eLen
-  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-  m = e & ((1 << (-nBits)) - 1)
-  e >>= (-nBits)
-  nBits += mLen
-  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-  if (e === 0) {
-    e = 1 - eBias
-  } else if (e === eMax) {
-    return m ? NaN : ((s ? -1 : 1) * Infinity)
-  } else {
-    m = m + Math.pow(2, mLen)
-    e = e - eBias
-  }
-  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
-}
-
-exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
-  var e, m, c
-  var eLen = nBytes * 8 - mLen - 1
-  var eMax = (1 << eLen) - 1
-  var eBias = eMax >> 1
-  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
-  var i = isLE ? 0 : (nBytes - 1)
-  var d = isLE ? 1 : -1
-  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
-
-  value = Math.abs(value)
-
-  if (isNaN(value) || value === Infinity) {
-    m = isNaN(value) ? 1 : 0
-    e = eMax
-  } else {
-    e = Math.floor(Math.log(value) / Math.LN2)
-    if (value * (c = Math.pow(2, -e)) < 1) {
-      e--
-      c *= 2
-    }
-    if (e + eBias >= 1) {
-      value += rt / c
-    } else {
-      value += rt * Math.pow(2, 1 - eBias)
-    }
-    if (value * c >= 2) {
-      e++
-      c /= 2
-    }
-
-    if (e + eBias >= eMax) {
-      m = 0
-      e = eMax
-    } else if (e + eBias >= 1) {
-      m = (value * c - 1) * Math.pow(2, mLen)
-      e = e + eBias
-    } else {
-      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
-      e = 0
-    }
-  }
-
-  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
-
-  e = (e << mLen) | m
-  eLen += mLen
-  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
-
-  buffer[offset + i - d] |= s * 128
-}
-
-
-/***/ }),
-/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11008,34 +11125,7 @@ function fromByteArray (uint8) {
 
 
 /***/ }),
-/* 9 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 10 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11049,9 +11139,9 @@ module.exports = g;
 
 
 
-var base64 = __webpack_require__(8)
-var ieee754 = __webpack_require__(7)
-var isArray = __webpack_require__(6)
+var base64 = __webpack_require__(7)
+var ieee754 = __webpack_require__(9)
+var isArray = __webpack_require__(10)
 
 exports.Buffer = Buffer
 exports.SlowBuffer = SlowBuffer
@@ -12829,221 +12919,135 @@ function isnan (val) {
   return val !== val // eslint-disable-line no-self-compare
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)))
 
 /***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
+/* 9 */
+/***/ (function(module, exports) {
 
-/* WEBPACK VAR INJECTION */(function($) {__webpack_require__(0);
-var gameBoard = new Array(100) //棋盘
-var lastPlayer
-var lastMoveCoor
-var flag
-var app = {
-	init:function(){
-		this.initGame()
-		this.events()
-	},
-	initGame:function(){
-		console.log(1)
-		var table= '<table id="realGameBoard">'+('<tr>'+'<td></td>'.repeat(10)+'</tr>').repeat(10)+'</table>'
-		$('body').html(table)
-	},
+exports.read = function (buffer, offset, isLE, mLen, nBytes) {
+  var e, m
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var nBits = -7
+  var i = isLE ? (nBytes - 1) : 0
+  var d = isLE ? -1 : 1
+  var s = buffer[offset + i]
 
-	fun:{
-		userMove:function(e){
-			// 获取鼠标点击点（设置误差范围）
-			var x = e.clientX
-			var y = e.clientY
+  i += d
 
-			// 获取棋盘左上角格中心点坐标
-			var element = $('#realGameBoard').find('tr').eq(0).children().eq(0)
-			var offset = $('#realGameBoard').offset();
-			var width = element.width();
-			var oX = offset.left 
-			var oY = offset.top 
+  e = s & ((1 << (-nBits)) - 1)
+  s >>= (-nBits)
+  nBits += eLen
+  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
 
-			// 相对棋格坐标
-			// 38/34为offset和clientX单位之间的转换
-			var boardCoor = {x:(Math.ceil((x/38*34-oX)/width)),y:(Math.ceil((y/38*34-oY)/width))}
-			
-			// 棋盘坐标
-			// console.log(e.offsetX)
-			// 判断当前是否有棋子
-			if(this.isOccupied(boardCoor)){
-				return
-			}
-			this.makeMove(0,boardCoor)
-			if(!flag){
-				this.AIMove()
-			}
-		},
+  m = e & ((1 << (-nBits)) - 1)
+  e >>= (-nBits)
+  nBits += mLen
+  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
 
-		AIMove:function(){
-			// 判断对手最后一步的状态 攻 准备 守
-			// 落子
-			// 3连判断 
-			// 
-			var i = 5
-			var endPoints
-			do{
-				endPoints = this.isN(lastMoveCoor,0,i)
-				i--
-			}while(endPoints===null && i>0)
-			if(!this.makeMove(1,endPoints[0])){
-				this.makeMove(1,endPoints[1])
-			}
-		},
+  if (e === 0) {
+    e = 1 - eBias
+  } else if (e === eMax) {
+    return m ? NaN : ((s ? -1 : 1) * Infinity)
+  } else {
+    m = m + Math.pow(2, mLen)
+    e = e - eBias
+  }
+  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
+}
 
+exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
+  var e, m, c
+  var eLen = nBytes * 8 - mLen - 1
+  var eMax = (1 << eLen) - 1
+  var eBias = eMax >> 1
+  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
+  var i = isLE ? 0 : (nBytes - 1)
+  var d = isLE ? 1 : -1
+  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
 
-		//裁判函数 若返回true则赢
-		judge:function(){
-			if(this.isN(lastMoveCoor,lastPlayer,5)!==null){
-				$('#realGameBoard').off('click') //对局结束
-				flag = true
-				switch(lastPlayer){
-					case 0:
-						alert('你赢了')
-						break
-					case 1:
-						alert('你输了')
-						break
-				}
-			}else{
-				flag = false
-			}
-		},
+  value = Math.abs(value)
 
+  if (isNaN(value) || value === Infinity) {
+    m = isNaN(value) ? 1 : 0
+    e = eMax
+  } else {
+    e = Math.floor(Math.log(value) / Math.LN2)
+    if (value * (c = Math.pow(2, -e)) < 1) {
+      e--
+      c *= 2
+    }
+    if (e + eBias >= 1) {
+      value += rt / c
+    } else {
+      value += rt * Math.pow(2, 1 - eBias)
+    }
+    if (value * c >= 2) {
+      e++
+      c /= 2
+    }
 
-		// 连n判断 返回端点坐标
-		// 通过四方向最大连来进行判断
-		isN:function(coor,player,n){
-			//四个方向的方向数组
-			var directions=[{i:1,j:0},{i:1,j:1},{i:0,j:1},{i:-1,j:1}]
-			var key = lastPlayer.toString().repeat(n)
+    if (e + eBias >= eMax) {
+      m = 0
+      e = eMax
+    } else if (e + eBias >= 1) {
+      m = (value * c - 1) * Math.pow(2, mLen)
+      e = e + eBias
+    } else {
+      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
+      e = 0
+    }
+  }
 
-			//遍历数组
-			for(var a=0;a<directions.length;a++){
-				var {i,j} = directions[a];	//ES6
-				var {x,y} = lastMoveCoor
-				//得到9连坐标数组
-				var originalArray = Array.of({x:(x-4*i),y:(y-4*j)},
-					{x:(x-3*i),y:(y-3*j)},
-					{x:(x-2*i),y:(y-2*j)},
-					{x:(x-i),y:(y-j)},
-					{x:x,y:y},
-					{x:(x+i),y:(y+j)},
-					{x:(x+2*i),y:(y+2*j)},
-					{x:(x+3*i),y:(y+3*j)},
-					{x:(x+4*i),y:(y+4*j)}
-				)
-				switch(n){
-					case 1:
-						array=originalArray.slice(4,5)
-						break
-					case 2:
-						array=originalArray.slice(3,6)
-						break
-					case 3:
-						array=originalArray.slice(2,7)
-						break
-					case 4:
-						array=originalArray.slice(1,8)
-						break
-					case 5:
-						array=originalArray
-						break
-					default:
-				}
-				//获取相应点在棋盘上的值
-				var result = array.map((value) => gameBoard[this.coor2Index(value)])
-				//将数组中的undefined转化为2
-				resultStr = result.map((x=2)=>x).join('')
-				if(resultStr.includes(key)){
-					var i = 0  //连通点起始标记
-					while(!resultStr.startsWith(key,i)){
-						i++
-					}
-					var j = i+n-1 //连通点末尾标记
-					// 将i,j 译回棋盘坐标
-					// 5-n为array在originArray中的起始位置
-					return [originalArray[5-n+i-1],originalArray[5-n+j+1]]	//返回端点坐标数组
-				}
-			}
-			return null
+  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
 
-		},
+  e = (e << mLen) | m
+  eLen += mLen
+  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
 
-		// 棋盘坐标化为数组坐标
-		coor2Index:function(coor){
-			var {x,y} = coor
-			var index = (y-1)*10+x
-			return index
-		},
-
-		// 判断当前位置是否有棋子
-		isOccupied:function(coor){
-			var index=this.coor2Index(coor)
-			if(gameBoard[index]===undefined||coor.x<1||coor.y<1){
-				return false
-			}else{
-				return true
-			}
-		},
-
-		// 落子
-		makeMove:function(player,coor){
-			console.log(coor)
-			if(coor.x===0||coor.x===11||coor.y===0||coor.y===11){ 
-				return false //落子失败
-			}
-			var index=this.coor2Index(coor)
-			if(this.isOccupied(coor)){
-				return false	//落子失败
-			}
-			gameBoard[index]=(player==0)?0:1
-
-			//最后一步记录信息更新
-			lastPlayer = player
-			lastMoveCoor = coor
-			this.render(index,player)
-			this.judge()
-			return true	//落子成功
-
-		},
-
-		render:function(index,player){
-			var chesspiece 
-			if(player==0){
-				chesspiece=$('<div class="black-chesspiece"></div>')
-			}else{
-				chesspiece=$('<div class="white-chesspiece"></div>')
-			}
-			$('#realGameBoard').find('td').eq(index-1).html(chesspiece)
-		}
-
-
-	},
-	
-
-
-	events:function(){
-		var that = this
-		console.log(1)
-		$('#realGameBoard').on('click',function(e){
-			that.fun.userMove(e)
-			console.log(2)
-		})
-	}
+  buffer[offset + i - d] |= s * 128
 }
 
 
-app.init()
+/***/ }),
+/* 10 */
+/***/ (function(module, exports) {
+
+var toString = {}.toString;
+
+module.exports = Array.isArray || function (arr) {
+  return toString.call(arr) == '[object Array]';
+};
 
 
+/***/ }),
+/* 11 */
+/***/ (function(module, exports) {
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
 
 /***/ })
 /******/ ]);
